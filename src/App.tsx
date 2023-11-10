@@ -88,7 +88,7 @@ function App() {
         <h1 className={styles.title}>今天要吃啥？</h1>
         <div className={styles.box}>
           <label htmlFor="item-file" className={styles.upload}>
-            上傳商品清單
+            Step1: 上傳MOMO下載的商品內容
           </label>
           <input
             id="item-file"
@@ -98,7 +98,7 @@ function App() {
             onChange={handleMomoUpload}
           ></input>
           <label htmlFor="momo-file" className={styles.upload}>
-            上傳MOMO商品內容
+            Step2: 上傳商品清單
           </label>
           <input
             id="momo-file"
