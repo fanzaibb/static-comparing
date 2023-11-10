@@ -238,6 +238,24 @@
   font-weight: bold;
 }
 
+.cell:hover {
+  background-color: #79e5cb;
+}
+
+.cell[style*="line-through"] {
+  background-color: #d3d3d3;
+}
+
+.stickyHeader {
+  position: sticky;
+  top: 0;
+  background-color: white;
+  z-index: 100;
+}
+
+.copy {
+  cursor: pointer;
+}
 /* Tablet and Smaller Desktop */
 @media (min-width: 701px) and (max-width: 1120px) {
   .grid {

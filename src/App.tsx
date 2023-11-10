@@ -25,10 +25,15 @@ interface Item {
   newCost?: string;
   newPrice?: string;
   newMarketPrice?: string;
+  strikeName?: boolean;
+  strikeCost?: boolean;
+  strikePrice?: boolean;
+  strikeMarketPrice?: boolean;
 }
 
 function App() {
   const [items, setItems] = useState<Item[]>([]);
+  const [differencesCount, setDifferencesCount] = useState(0);
 
   const handleMomoUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files![0];
@@ -52,6 +57,7 @@ function App() {
     );
   };
   const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    let differences = 0;
     const file = e.target.files![0];
     const data = await file.arrayBuffer();
     const workbook = XLSX.read(data);
@@ -68,24 +74,90 @@ function App() {
           (row: any) => String(row["商品編號"]) === item.id
         );
         if (row) {
-          return {
+          const newItem = {
             ...item,
             newName: String(row["商品名稱"]),
             newCost: String(row["成本"]),
             newPrice: String(row["定價"]),
             newMarketPrice: String(row["參考市價(建議售價)"]),
           };
+          if (newItem.name !== newItem.newName) differences++;
+          if (newItem.cost !== newItem.newCost) differences++;
+          if (newItem.price !== newItem.newPrice) differences++;
+          if (newItem.marketPrice !== newItem.newMarketPrice) differences++;
+          return newItem;
         }
         return item;
       });
 
+      setDifferencesCount(differences);
       return updatedItems;
     });
   };
+
+  const toggleStrike = (index: number, strikeField: keyof Item) => {
+    const newItems = items.map((item, idx) => {
+      if (idx === index) {
+        return { ...item, [strikeField]: !item[strikeField] };
+      }
+      return item;
+    });
+    if (items[index][strikeField]) setDifferencesCount(differencesCount + 1);
+    else setDifferencesCount(differencesCount - 1);
+    setItems(newItems);
+  };
+
+  const renderCell = (
+    item: Item,
+    index: number,
+    field: keyof Item,
+    newField: keyof Item,
+    strikeField: keyof Item
+  ) => {
+    const isDifferent =
+      item[newField] && String(item[field]) !== String(item[newField]);
+    return (
+      <td
+        style={{
+          cursor: isDifferent ? "pointer" : "default",
+          textDecoration: item[strikeField] ? "line-through" : "none",
+        }}
+        className={styles.cell}
+        onClick={() => isDifferent && toggleStrike(index, strikeField)}
+      >
+        {item[field]}
+        {isDifferent && (
+          <span style={{ color: "red" }}> ({item[newField]})</span>
+        )}
+      </td>
+    );
+  };
+
+  const handleCopyClick = (textToCopy: string) => {
+    navigator.clipboard
+      .writeText(textToCopy)
+      .then(() => {
+        console.log("文本已复制到剪贴板");
+        // 可以在这里显示一些通知或反馈
+      })
+      .catch((err) => {
+        console.error("复制文本时出错:", err);
+      });
+  };
+
   return (
     <div className="App">
       <main className={styles.main}>
         <h1 className={styles.title}>今天要吃啥？</h1>
+        {differencesCount > 0 && (
+          <span>
+            還有
+            <b style={{ fontSize: "20px", padding: "0 8px" }}>
+              {differencesCount}
+            </b>
+            個改完就能吃飯惹～
+          </span>
+        )}
         <div className={styles.box}>
           <label htmlFor="item-file" className={styles.upload}>
             Step1: 上傳MOMO下載的商品內容
@@ -111,8 +183,9 @@ function App() {
         <div>
           {items.length > 0 && (
             <table className={styles.table}>
-              <thead>
+              <thead className={styles.stickyHeader}>
                 <tr>
+                  <th>No</th>
                   <th>編號</th>
                   <th>名稱</th>
                   <th>成本</th>
@@ -123,35 +196,29 @@ function App() {
               <tbody>
                 {items.map((item, index) => (
                   <tr key={index}>
-                    <td>{item.id}</td>
-                    <td>
-                      {item.name}
-                      {item.newName && item.name !== item.newName && (
-                        <span style={{ color: "red" }}> ({item.newName})</span>
-                      )}
+                    <td>{index}</td>
+                    <td
+                      className={styles.copy}
+                      onClick={() => handleCopyClick(item.id)}
+                    >
+                      {item.id}
                     </td>
-                    <td>
-                      {item.cost}
-                      {item.newCost && item.cost !== item.newCost && (
-                        <span style={{ color: "red" }}> ({item.newCost})</span>
-                      )}
-                    </td>
-                    <td>
-                      {item.price}
-                      {item.newPrice && item.price !== item.newPrice && (
-                        <span style={{ color: "red" }}> ({item.newPrice})</span>
-                      )}
-                    </td>
-                    <td>
-                      {item.marketPrice}
-                      {item.newMarketPrice &&
-                        item.marketPrice !== item.newMarketPrice && (
-                          <span style={{ color: "red" }}>
-                            {" "}
-                            ({item.newMarketPrice})
-                          </span>
-                        )}
-                    </td>
+                    {renderCell(item, index, "name", "newName", "strikeName")}
+                    {renderCell(item, index, "cost", "newCost", "strikeCost")}
+                    {renderCell(
+                      item,
+                      index,
+                      "price",
+                      "newPrice",
+                      "strikePrice"
+                    )}
+                    {renderCell(
+                      item,
+                      index,
+                      "marketPrice",
+                      "newMarketPrice",
+                      "strikeMarketPrice"
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -159,20 +226,6 @@ function App() {
           )}
         </div>
       </main>
-      {/* <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header> */}
     </div>
   );
 }
