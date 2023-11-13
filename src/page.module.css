@@ -230,12 +230,25 @@
 .upload {
   cursor: pointer;
   margin-right: 8px;
-  border: 2px solid black;
+  border: 2px solid rgb(140, 140, 140);
   color: white;
-  background-color: orange;
+  background: linear-gradient(0.25turn, #3f87a6, #a1c783, #f69d3c);
   padding: 8px 16px;
   border-radius: 20px;
   font-weight: bold;
+  transition: all 0.8s ease;
+  background-size: 200% 100%;
+  background-position: left bottom;
+  box-shadow: inset;
+  box-shadow: 3px 4px 0px 0px #726d6c;
+}
+
+.upload:hover {
+  background-position: right bottom;
+}
+
+.upload:active {
+  box-shadow: 1px 2px 0px 0px #726d6c;
 }
 
 .cell:hover {
