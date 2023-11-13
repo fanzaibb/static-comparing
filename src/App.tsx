@@ -89,7 +89,10 @@ function App() {
             newMarketPrice: String(row["參考市價(建議售價)"]),
             findMatch: true,
           };
-          if (newItem.name !== newItem.newName) differences++;
+          if (
+            removeWhitespace(newItem.name) !== removeWhitespace(newItem.newName)
+          )
+            differences++;
           if (newItem.cost !== newItem.newCost) differences++;
           if (newItem.price !== newItem.newPrice) differences++;
           if (newItem.marketPrice !== newItem.newMarketPrice) differences++;
@@ -102,6 +105,10 @@ function App() {
       return updatedItems;
     });
   };
+
+  function removeWhitespace(str) {
+    return JSON.stringify(str.replace(/\s+/g, "").trim());
+  }
 
   const toggleStrike = (index: number, strikeField: keyof Item) => {
     const newItems = items.map((item, idx) => {
@@ -123,7 +130,11 @@ function App() {
     strikeField: keyof Item
   ) => {
     const isDifferent =
-      item[newField] && String(item[field]) !== String(item[newField]);
+      field === "name"
+        ? item[newField] &&
+          removeWhitespace(item["name"]) !== removeWhitespace(item["newName"])
+        : item[newField] && String(item[field]) !== String(item[newField]);
+
     return (
       <td
         style={{
