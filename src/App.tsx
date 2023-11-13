@@ -29,14 +29,19 @@ interface Item {
   strikeCost?: boolean;
   strikePrice?: boolean;
   strikeMarketPrice?: boolean;
+  findMatch: boolean;
 }
 
 function App() {
   const [items, setItems] = useState<Item[]>([]);
   const [differencesCount, setDifferencesCount] = useState(0);
-
+  const [fileList, setFileList] = useState<string[]>([]);
   const handleMomoUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files![0];
+    if (fileList.length > 0) {
+      await setFileList([]);
+    }
+    await setFileList((prevList) => [...prevList, file.name]);
     const data = await file.arrayBuffer();
     const workbook = XLSX.read(data);
 
@@ -46,19 +51,21 @@ function App() {
       worksheet
     ) as ExcelRow[];
 
-    setItems(
+    await setItems(
       jsonData.map((row) => ({
-        id: row["商品編號"],
-        name: row["商品名稱"],
-        cost: row["進價"],
-        price: row["售價(含稅)"],
-        marketPrice: row["市價"],
+        id: String(row?.["商品編號"] || row["商品編號(20碼含規格碼)"]),
+        name: String(row?.["商品名稱"]),
+        cost: String(row?.["進價"] || row["成本"]),
+        price: String(row?.["售價(含稅)"] || row["售價(網路價)"]),
+        marketPrice: String(row?.["市價"] || row["參考市價(建議售價)"]),
+        findMatch: false,
       }))
     );
   };
   const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     let differences = 0;
     const file = e.target.files![0];
+    await setFileList((prevList) => [...prevList, file.name]);
     const data = await file.arrayBuffer();
     const workbook = XLSX.read(data);
 
@@ -68,7 +75,7 @@ function App() {
       worksheet
     ) as ExcelRow[];
 
-    setItems((prevItems) => {
+    await setItems((prevItems) => {
       const updatedItems = prevItems.map((item) => {
         const row = jsonData.find(
           (row: any) => String(row["商品編號"]) === item.id
@@ -80,6 +87,7 @@ function App() {
             newCost: String(row["成本"]),
             newPrice: String(row["定價"]),
             newMarketPrice: String(row["參考市價(建議售價)"]),
+            findMatch: true,
           };
           if (newItem.name !== newItem.newName) differences++;
           if (newItem.cost !== newItem.newCost) differences++;
@@ -160,7 +168,7 @@ function App() {
         )}
         <div className={styles.box}>
           <label htmlFor="item-file" className={styles.upload}>
-            Step1: 上傳MOMO下載的商品內容
+            Step1: 上傳平台的商品清單
           </label>
           <input
             id="item-file"
@@ -180,6 +188,16 @@ function App() {
             onChange={handleFileUpload}
           ></input>
         </div>
+        {fileList.length > 0 && (
+          <p>
+            第一個檔案：<b>{fileList[0]}</b>
+          </p>
+        )}
+        {fileList.length > 1 && (
+          <p>
+            第二個檔案：<b>{fileList[1]}</b>
+          </p>
+        )}
         <div>
           {items.length > 0 && (
             <table className={styles.table}>
@@ -195,8 +213,19 @@ function App() {
               </thead>
               <tbody>
                 {items.map((item, index) => (
-                  <tr key={index}>
-                    <td>{index}</td>
+                  <tr
+                    key={index}
+                    className={
+                      !item.findMatch && fileList.length === 2
+                        ? styles.unmatch
+                        : ""
+                    }
+                  >
+                    <td>
+                      {!item.findMatch && fileList.length === 2
+                        ? "對比失敗"
+                        : index}
+                    </td>
                     <td
                       className={styles.copy}
                       onClick={() => handleCopyClick(item.id)}
